@@ -103,6 +103,7 @@ fn render_help(frame: &mut Frame<'_>, area: Rect, palette: Palette) {
     render_text_panel(frame, area, " help ", lines, palette);
 }
 
+//about I'll need to edit this
 fn render_about(frame: &mut Frame<'_>, area: Rect, palette: Palette) {
     let lines = vec![
         Line::from(Span::styled(
@@ -112,8 +113,8 @@ fn render_about(frame: &mut Frame<'_>, area: Rect, palette: Palette) {
                 .add_modifier(Modifier::BOLD),
         )),
         Line::from(""),
-        Line::from("James Kevius Tribble builds software with a practical, systems-minded approach."),
-        Line::from("This site is intentionally compact: keyboard-first navigation, direct links, and editable JSON content."),
+        Line::from("Kevius Tribble is a Computer Science Student @ Clemson University."),
+        Line::from("Passionate about solving Computer Vision, Cloud, and ML Problems."),
         Line::from(""),
         Line::from(vec![
             Span::styled("Next: ", Style::default().fg(palette.muted)),
