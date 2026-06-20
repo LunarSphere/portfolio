@@ -3,19 +3,49 @@ use ratzilla::ratatui::{
     widgets::{Block, BorderType, Paragraph, Wrap},
 };
 
-use crate::{app::App, theme::Palette};
+use crate::{
+    app::{App, Panel},
+    theme::Palette,
+};
 
 use super::panels;
 
+const MOBILE_COMMANDS: &[&str] = &[
+    "/projects",
+    "/resume",
+    "/socials",
+    "/about",
+    "/help",
+    "/toggle",
+];
+
+// const BANNER: &[&str] = &[
+//     r#" __   ___  _______  ___      ___  __     ____  ____   ________      ___________  _______    __     _______   _______   ___       _______  "#,
+//     r#"|/"| /  ")/"     "||"  \    /"  ||" \   ("  _||_ " | /"       )    ("     _   ")/"      \  |" \   |   _  "\ |   _  "\ |"  |     /"     "| "#,
+//     r#"(: |/   /(: ______) \   \  //  / ||  |  |   (  ) : |(:   \___/      )__/  \\__/|:        | ||  |  (. |_)  :)(. |_)  :)||  |    (: ______) "#,
+//     r#"|    __/  \/    |    \\  \/. ./  |:  |  (:  |  | . ) \___  \           \\_ /   |_____/   ) |:  |  |:     \/ |:     \/ |:  |     \/    |   "#,
+//     r#"(// _  \  // ___)_    \.    //   |.  |   \\ \__/ //   __/  \\          |.  |    //      /  |.  |  (|  _  \\ (|  _  \\  \  |___  // ___)_  "#,
+//     r#"|: | \  \(:      "|    \\   /    /\  |\  /\\ __ //\  /" \   :)         \:  |   |:  __   \  /\  |\ |: |_)  :)|: |_)  :)( \_|:  \(:      "| "#,
+//     r#"(__|  \__)\_______)     \__/    (__\_|_)(__________)(_______/           \__|   |__|  \___)(__\_|_)(_______/ (_______/  \_______)\_______) "#,
+//     r#"                                                                                                                                          "#,
+// ];
+// //
+// const BANNER: &[&str] = &[
+//     r#"                                                                                                            "#,
+//     r#"@@@  @@@ @@@@@@@@ @@@  @@@ @@@ @@@  @@@  @@@@@@    @@@@@@@ @@@@@@@  @@@ @@@@@@@  @@@@@@@  @@@      @@@@@@@@ "#,
+//     r#"@@!  !@@ @@!      @@!  @@@ @@! @@!  @@@ !@@          @!!   @@!  @@@ @@! @@!  @@@ @@!  @@@ @@!      @@!      "#,
+//     r#"@!@@!@!  @!!!:!   @!@  !@! !!@ @!@  !@!  !@@!!       @!!   @!@!!@!  !!@ @!@!@!@  @!@!@!@  @!!      @!!!:!   "#,
+//     r#"!!: :!!  !!:       !: .:!  !!: !!:  !!!     !:!      !!:   !!: :!!  !!: !!:  !!! !!:  !!! !!:      !!:      "#,
+//     r#" :   ::: : :: ::     ::    :    :.:: :  ::.: :        :     :   : : :   :: : ::  :: : ::  : ::.: : : :: ::  "#,
+//     r#"                                                                                                            "#,
+// ];
+//
 const BANNER: &[&str] = &[
-    r#" __   ___  _______  ___      ___  __     ____  ____   ________      ___________  _______    __     _______   _______   ___       _______  "#,
-    r#"|/"| /  ")/"     "||"  \    /"  ||" \   ("  _||_ " | /"       )    ("     _   ")/"      \  |" \   |   _  "\ |   _  "\ |"  |     /"     "| "#,
-    r#"(: |/   /(: ______) \   \  //  / ||  |  |   (  ) : |(:   \___/      )__/  \\__/|:        | ||  |  (. |_)  :)(. |_)  :)||  |    (: ______) "#,
-    r#"|    __/  \/    |    \\  \/. ./  |:  |  (:  |  | . ) \___  \           \\_ /   |_____/   ) |:  |  |:     \/ |:     \/ |:  |     \/    |   "#,
-    r#"(// _  \  // ___)_    \.    //   |.  |   \\ \__/ //   __/  \\          |.  |    //      /  |.  |  (|  _  \\ (|  _  \\  \  |___  // ___)_  "#,
-    r#"|: | \  \(:      "|    \\   /    /\  |\  /\\ __ //\  /" \   :)         \:  |   |:  __   \  /\  |\ |: |_)  :)|: |_)  :)( \_|:  \(:      "| "#,
-    r#"(__|  \__)\_______)     \__/    (__\_|_)(__________)(_______/           \__|   |__|  \___)(__\_|_)(_______/ (_______/  \_______)\_______) "#,
-    r#"                                                                                                                                          "#,
+    r#"  _  _______   _____ _   _ ___   _____ ___ ___ ___ ___ _    ___ "#,
+    r#" | |/ / __\ \ / /_ _| | | / __| |_   _| _ \_ _| _ ) _ ) |  | __|"#,
+    r#" | ' <| _| \ V / | || |_| \__ \   | | |   /| || _ \ _ \ |__| _| "#,
+    r#" |_|\_\___| \_/ |___|\___/|___/   |_| |_|_\___|___/___/____|___|"#,
+    r#"                                                                "#,
 ];
 
 pub fn render(frame: &mut Frame<'_>, area: Rect, app: &mut App, palette: Palette) {
@@ -32,16 +62,24 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, app: &mut App, palette: Palette
     let inner = shell.inner(area);
     frame.render_widget(shell, area);
 
-    let header_height = if inner.height >= 28 && inner.width >= 64 {
+    if app.is_mobile_layout(area) {
+        render_mobile_shell(frame, inner, app, palette);
+    } else {
+        render_desktop_shell(frame, inner, app, palette);
+    }
+}
+
+fn render_desktop_shell(frame: &mut Frame<'_>, area: Rect, app: &mut App, palette: Palette) {
+    let header_height = if area.height >= 28 && area.width >= 64 {
         8
-    } else if inner.height >= 12 {
+    } else if area.height >= 12 {
         3
     } else {
         1
     };
-    let history_height = if inner.height >= 25 {
+    let history_height = if area.height >= 25 {
         6
-    } else if inner.height >= 18 {
+    } else if area.height >= 18 {
         4
     } else {
         3
@@ -53,12 +91,45 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, app: &mut App, palette: Palette
         Constraint::Length(history_height),
         Constraint::Length(3),
     ])
-    .areas(inner);
+    .areas(area);
 
     render_header(frame, header, app, palette);
-    panels::render_active_panel(frame, body, app, palette);
+    panels::render_active_panel(frame, body, app, palette, false);
     render_history(frame, history, app, palette);
-    render_prompt(frame, prompt, app, palette);
+    render_prompt(frame, prompt, app, palette, false);
+}
+
+fn render_mobile_shell(frame: &mut Frame<'_>, area: Rect, app: &mut App, palette: Palette) {
+    let header_height = if area.height >= 18 { 2 } else { 1 };
+    let chips_height = if area.height < 18 {
+        3
+    } else if area.width >= 62 {
+        4
+    } else {
+        5
+    };
+    let history_height = if area.height >= 30 {
+        4
+    } else if area.height >= 24 {
+        3
+    } else {
+        0
+    };
+
+    let [header, body, chips, history, prompt] = Layout::vertical([
+        Constraint::Length(header_height),
+        Constraint::Min(4),
+        Constraint::Length(chips_height),
+        Constraint::Length(history_height),
+        Constraint::Length(3),
+    ])
+    .areas(area);
+
+    render_mobile_header(frame, header, app, palette);
+    panels::render_active_panel(frame, body, app, palette, true);
+    render_command_chips(frame, chips, app, palette);
+    render_history(frame, history, app, palette);
+    render_prompt(frame, prompt, app, palette, true);
 }
 
 fn render_header(frame: &mut Frame<'_>, area: Rect, app: &App, palette: Palette) {
@@ -113,6 +184,46 @@ fn render_header(frame: &mut Frame<'_>, area: Rect, app: &App, palette: Palette)
     );
 }
 
+fn render_mobile_header(frame: &mut Frame<'_>, area: Rect, app: &App, palette: Palette) {
+    if area.is_empty() {
+        return;
+    }
+
+    let lines = if area.height > 1 {
+        vec![
+            Line::from(Span::styled(
+                "Kevius Tribble",
+                Style::default()
+                    .fg(palette.accent)
+                    .add_modifier(Modifier::BOLD),
+            )),
+            Line::from(vec![
+                Span::styled(
+                    app.active_panel.title(),
+                    Style::default().fg(palette.foreground),
+                ),
+                Span::raw(" | "),
+                Span::raw(app.theme.name()),
+            ]),
+        ]
+    } else {
+        vec![Line::from(vec![
+            Span::styled("Kevius Tribble", Style::default().fg(palette.accent)),
+            Span::raw(" | "),
+            Span::raw(app.active_panel.title()),
+            Span::raw(" | "),
+            Span::raw(app.theme.name()),
+        ])]
+    };
+
+    frame.render_widget(
+        Paragraph::new(Text::from(lines))
+            .style(Style::default().fg(palette.foreground))
+            .wrap(Wrap { trim: false }),
+        area,
+    );
+}
+
 fn status_line(app: &App, palette: Palette) -> Line<'static> {
     Line::from(vec![
         Span::styled("panel: ", Style::default().fg(palette.muted)),
@@ -124,6 +235,76 @@ fn status_line(app: &App, palette: Palette) -> Line<'static> {
         Span::styled("hint: ", Style::default().fg(palette.muted)),
         Span::raw("/help"),
     ])
+}
+
+fn render_command_chips(frame: &mut Frame<'_>, area: Rect, app: &mut App, palette: Palette) {
+    if area.is_empty() {
+        return;
+    }
+
+    let block = Block::bordered()
+        .border_style(Style::default().fg(palette.border))
+        .title(" shortcuts ");
+    let inner = block.inner(area);
+    frame.render_widget(block, area);
+
+    if inner.is_empty() {
+        return;
+    }
+
+    let x_limit = inner.x.saturating_add(inner.width);
+    let y_limit = inner.y.saturating_add(inner.height);
+    let row_height = if inner.width >= 62 && inner.height >= 2 {
+        2
+    } else {
+        1
+    };
+    let mut x = inner.x;
+    let mut y = inner.y;
+
+    for &command in MOBILE_COMMANDS {
+        let chip_width = (command.len() as u16).saturating_add(2).min(inner.width);
+        if x > inner.x && x.saturating_add(chip_width) > x_limit {
+            x = inner.x;
+            y = y.saturating_add(row_height);
+        }
+        if y >= y_limit || chip_width == 0 {
+            break;
+        }
+
+        let visible_width = chip_width.min(x_limit.saturating_sub(x));
+        if visible_width == 0 {
+            break;
+        }
+
+        let is_active = command_matches_panel(command, app.active_panel);
+        let style = if is_active {
+            Style::default()
+                .fg(palette.selection_foreground)
+                .bg(palette.selection_background)
+                .add_modifier(Modifier::BOLD)
+        } else {
+            Style::default().fg(palette.accent)
+        };
+        let text = format!("[{command}]");
+        let chip_area = Rect::new(x, y, visible_width, 1);
+        frame.render_widget(Paragraph::new(text).style(style), chip_area);
+
+        let hit_height = row_height.min(y_limit.saturating_sub(y));
+        app.add_command_hit_zone(command, Rect::new(x, y, visible_width, hit_height));
+        x = x.saturating_add(chip_width.saturating_add(1));
+    }
+}
+
+fn command_matches_panel(command: &str, panel: Panel) -> bool {
+    matches!(
+        (command, panel),
+        ("/projects", Panel::Projects)
+            | ("/resume", Panel::Resume)
+            | ("/socials", Panel::Socials)
+            | ("/about", Panel::About)
+            | ("/help", Panel::Help)
+    )
 }
 
 fn render_history(frame: &mut Frame<'_>, area: Rect, app: &App, palette: Palette) {
@@ -169,18 +350,23 @@ fn render_history(frame: &mut Frame<'_>, area: Rect, app: &App, palette: Palette
     );
 }
 
-fn render_prompt(frame: &mut Frame<'_>, area: Rect, app: &App, palette: Palette) {
+fn render_prompt(frame: &mut Frame<'_>, area: Rect, app: &App, palette: Palette, is_mobile: bool) {
     if area.is_empty() {
         return;
     }
 
     let prompt = format!("guest@portfolio:~$ {}_", app.command_input);
+    let title = if is_mobile {
+        " command optional "
+    } else {
+        " command "
+    };
     frame.render_widget(
         Paragraph::new(prompt)
             .block(
                 Block::bordered()
                     .border_style(Style::default().fg(palette.border))
-                    .title(" command "),
+                    .title(title),
             )
             .style(
                 Style::default()

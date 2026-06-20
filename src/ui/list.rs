@@ -30,7 +30,14 @@ impl SelectableList {
         }
     }
 
-    pub fn render(self, frame: &mut Frame<'_>, area: Rect, app: &mut App, palette: Palette) {
+    pub fn render(
+        self,
+        frame: &mut Frame<'_>,
+        area: Rect,
+        app: &mut App,
+        palette: Palette,
+        is_mobile: bool,
+    ) {
         let block = Block::bordered()
             .border_type(BorderType::Plain)
             .border_style(Style::default().fg(palette.border))
@@ -42,7 +49,8 @@ impl SelectableList {
             return;
         }
 
-        let visible_rows = inner.height as usize;
+        let row_height = if is_mobile && inner.height >= 4 { 2 } else { 1 };
+        let visible_rows = (inner.height / row_height).max(1) as usize;
         match self.panel {
             Panel::Projects => app.ensure_project_visible(visible_rows),
             Panel::Socials => app.ensure_social_visible(visible_rows),
@@ -68,8 +76,15 @@ impl SelectableList {
             .take(visible_rows)
             .enumerate()
         {
-            let y = inner.y.saturating_add(row_offset as u16);
-            let row = Rect::new(inner.x, y, inner.width, 1);
+            let y = inner
+                .y
+                .saturating_add((row_offset as u16).saturating_mul(row_height));
+            let available_height = inner
+                .y
+                .saturating_add(inner.height)
+                .saturating_sub(y)
+                .min(row_height);
+            let row = Rect::new(inner.x, y, inner.width, available_height);
             let is_selected = index == selected;
             let style = if is_selected {
                 Style::default()
@@ -82,17 +97,40 @@ impl SelectableList {
 
             let marker = item.marker.unwrap_or(" ");
             let cursor = if is_selected { ">" } else { " " };
-            let line = Line::from(vec![
+            let title_line = Line::from(vec![
                 Span::styled(cursor, Style::default().fg(palette.accent)),
                 Span::raw(" "),
                 Span::styled(marker, Style::default().fg(palette.warning)),
                 Span::raw(" "),
                 Span::styled(item.title.as_str(), style),
-                Span::styled("  ", style),
-                Span::styled(item.meta.as_str(), Style::default().fg(palette.muted)),
             ]);
 
-            frame.render_widget(Paragraph::new(line).style(style), row);
+            frame.render_widget(
+                Paragraph::new(title_line).style(style),
+                Rect::new(row.x, row.y, row.width, 1),
+            );
+            if row.height > 1 {
+                let meta_line = Line::from(vec![
+                    Span::raw("    "),
+                    Span::styled(item.meta.as_str(), Style::default().fg(palette.muted)),
+                ]);
+                frame.render_widget(
+                    Paragraph::new(meta_line).style(Style::default().fg(palette.muted)),
+                    Rect::new(row.x, row.y.saturating_add(1), row.width, 1),
+                );
+            } else {
+                let meta_x = row.x.saturating_add(4 + item.title.len() as u16);
+                if meta_x < row.x.saturating_add(row.width) {
+                    let meta_width = row.x.saturating_add(row.width).saturating_sub(meta_x);
+                    frame.render_widget(
+                        Paragraph::new(Line::from(Span::styled(
+                            item.meta.as_str(),
+                            Style::default().fg(palette.muted),
+                        ))),
+                        Rect::new(meta_x, row.y, meta_width, 1),
+                    );
+                }
+            }
             app.add_hit_zone(self.panel, index, row);
         }
 

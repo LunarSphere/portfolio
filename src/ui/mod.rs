@@ -21,15 +21,16 @@ pub fn render(frame: &mut Frame<'_>, app: &mut App, background: &mut LifeBackgro
         Block::default().style(Style::default().bg(palette.background)),
         area,
     );
-    background.render(frame, palette);
+    let is_mobile = app.is_mobile_layout(area);
+    background.render(frame, palette, is_mobile);
 
-    let shell_area = background_area(area);
+    let shell_area = background_area(area, is_mobile);
     render_background(frame, shell_area, palette);
     shell::render(frame, shell_area, app, palette);
 }
 
-fn background_area(area: Rect) -> Rect {
-    if area.width < 72 || area.height < 24 {
+fn background_area(area: Rect, is_mobile: bool) -> Rect {
+    if is_mobile || area.width < 72 || area.height < 24 {
         return area;
     }
 

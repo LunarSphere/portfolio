@@ -63,6 +63,7 @@
         width: 100vw;
         height: 100dvh;
         outline: none;
+        touch-action: manipulation;
       }
 
       #terminal [id$="_ratzilla_grid"],
@@ -70,12 +71,18 @@
         outline: none;
       }
 
+      #terminal,
+      #terminal [id$="_ratzilla_grid"],
+      #terminal #grid,
       pre {
-        margin: 0;
         font-family: inherit;
         font-size: 14px;
         line-height: 1.25;
         letter-spacing: 0;
+      }
+
+      pre {
+        margin: 0;
       }
 
       .mascot-dock {
@@ -145,7 +152,7 @@
         color: var(--accent);
       }
 
-      @media (max-width: 700px) {
+      @media (max-width: 700px), (max-height: 520px) {
         body {
           overflow: auto;
         }
@@ -155,26 +162,16 @@
           padding: 0;
         }
 
+        #terminal,
+        #terminal [id$="_ratzilla_grid"],
+        #terminal #grid,
         pre {
           font-size: 11px;
           line-height: 1.24;
         }
 
         .mascot-dock {
-          right: 8px;
-          bottom: 8px;
-          grid-template-columns: 34px minmax(0, 1fr);
-          max-width: calc(100vw - 16px);
-          padding: 6px 8px;
-        }
-
-        .mascot-dock img {
-          width: 34px;
-          height: 34px;
-        }
-
-        .mascot-dock p {
-          font-size: 10px;
+          display: none;
         }
       }
     </style>

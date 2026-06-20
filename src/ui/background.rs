@@ -3,6 +3,7 @@ use ratzilla::ratatui::{prelude::*, widgets::Paragraph};
 use crate::theme::Palette;
 
 const UPDATE_EVERY_FRAMES: u8 = 5;
+const MOBILE_UPDATE_EVERY_FRAMES: u8 = 12;
 
 #[derive(Debug, Default)]
 pub struct LifeBackground {
@@ -11,18 +12,24 @@ pub struct LifeBackground {
     cells: Vec<bool>,
     scratch: Vec<bool>,
     frame_count: u8,
+    is_subtle: bool,
 }
 
 impl LifeBackground {
-    pub fn render(&mut self, frame: &mut Frame<'_>, palette: Palette) {
+    pub fn render(&mut self, frame: &mut Frame<'_>, palette: Palette, is_subtle: bool) {
         let area = frame.area();
         if area.is_empty() {
             return;
         }
 
-        self.ensure_size(area.width, area.height);
+        self.ensure_size(area.width, area.height, is_subtle);
         self.frame_count = self.frame_count.saturating_add(1);
-        if self.frame_count >= UPDATE_EVERY_FRAMES {
+        let update_every = if is_subtle {
+            MOBILE_UPDATE_EVERY_FRAMES
+        } else {
+            UPDATE_EVERY_FRAMES
+        };
+        if self.frame_count >= update_every {
             self.frame_count = 0;
             self.step();
         }
@@ -45,16 +52,20 @@ impl LifeBackground {
         );
     }
 
-    fn ensure_size(&mut self, width: u16, height: u16) {
-        if width == 0 || height == 0 || (self.width == width && self.height == height) {
+    fn ensure_size(&mut self, width: u16, height: u16, is_subtle: bool) {
+        if width == 0
+            || height == 0
+            || (self.width == width && self.height == height && self.is_subtle == is_subtle)
+        {
             return;
         }
 
         self.width = width;
         self.height = height;
+        self.is_subtle = is_subtle;
         let len = width as usize * height as usize;
         self.cells = (0..len)
-            .map(|index| seeded_cell(index as u64, width, height))
+            .map(|index| seeded_cell(index as u64, width, height, is_subtle))
             .collect();
         self.scratch = vec![false; len];
         self.frame_count = 0;
@@ -108,7 +119,7 @@ fn offset_coordinate(value: u16, offset: i16, limit: u16) -> Option<u16> {
         .filter(|value| *value < limit)
 }
 
-fn seeded_cell(index: u64, width: u16, height: u16) -> bool {
+fn seeded_cell(index: u64, width: u16, height: u16, is_subtle: bool) -> bool {
     let mut value = index
         .wrapping_mul(0x9e37_79b9_7f4a_7c15)
         .wrapping_add((width as u64) << 32)
@@ -118,5 +129,6 @@ fn seeded_cell(index: u64, width: u16, height: u16) -> bool {
     value ^= value >> 27;
     value = value.wrapping_mul(0x94d0_49bb_1331_11eb);
     value ^= value >> 31;
-    value % 5 == 0
+    let density = if is_subtle { 11 } else { 5 };
+    value % density == 0
 }

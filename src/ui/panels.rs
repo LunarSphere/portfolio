@@ -13,21 +13,27 @@ use crate::{
 
 use super::list::{SelectableItem, SelectableList};
 
-pub fn render_active_panel(frame: &mut Frame<'_>, area: Rect, app: &mut App, palette: Palette) {
+pub fn render_active_panel(
+    frame: &mut Frame<'_>,
+    area: Rect,
+    app: &mut App,
+    palette: Palette,
+    is_mobile: bool,
+) {
     match app.active_panel {
-        Panel::Welcome => render_welcome(frame, area, app, palette),
+        Panel::Welcome => render_welcome(frame, area, app, palette, is_mobile),
         Panel::Help => render_help(frame, area, palette),
         Panel::About => render_about(frame, area, palette),
-        Panel::Projects => render_projects(frame, area, app, palette),
-        Panel::Socials => render_socials(frame, area, app, palette),
+        Panel::Projects => render_projects(frame, area, app, palette, is_mobile),
+        Panel::Socials => render_socials(frame, area, app, palette, is_mobile),
         Panel::Resume => render_resume(frame, area, palette),
     }
 }
 
-fn render_welcome(frame: &mut Frame<'_>, area: Rect, app: &App, palette: Palette) {
+fn render_welcome(frame: &mut Frame<'_>, area: Rect, app: &App, palette: Palette, is_mobile: bool) {
     let project_count = app.projects.len();
     let social_count = app.socials.len();
-    let lines = vec![
+    let mut lines = vec![
         Line::from(Span::styled(
             "James Kevius Tribble",
             Style::default()
@@ -53,6 +59,10 @@ fn render_welcome(frame: &mut Frame<'_>, area: Rect, app: &App, palette: Palette
         Line::from(""),
         Line::from("Type a command in the prompt and press Enter."),
     ];
+    if is_mobile {
+        lines.pop();
+        lines.push(Line::from("Tap a shortcut below or type a command."));
+    }
 
     render_text_panel(frame, area, " welcome ", lines, palette);
 }
@@ -139,7 +149,13 @@ fn render_resume(frame: &mut Frame<'_>, area: Rect, palette: Palette) {
     render_text_panel(frame, area, " resume ", lines, palette);
 }
 
-fn render_projects(frame: &mut Frame<'_>, area: Rect, app: &mut App, palette: Palette) {
+fn render_projects(
+    frame: &mut Frame<'_>,
+    area: Rect,
+    app: &mut App,
+    palette: Palette,
+    is_mobile: bool,
+) {
     let rows = app
         .projects
         .iter()
@@ -150,12 +166,19 @@ fn render_projects(frame: &mut Frame<'_>, area: Rect, app: &mut App, palette: Pa
         })
         .collect();
 
-    let [list_area, preview_area] = split_browser_area(area);
-    SelectableList::new(" projects ", Panel::Projects, rows).render(frame, list_area, app, palette);
+    let [list_area, preview_area] = split_browser_area(area, is_mobile);
+    SelectableList::new(" projects ", Panel::Projects, rows)
+        .render(frame, list_area, app, palette, is_mobile);
     render_project_preview(frame, preview_area, app.selected_project(), palette);
 }
 
-fn render_socials(frame: &mut Frame<'_>, area: Rect, app: &mut App, palette: Palette) {
+fn render_socials(
+    frame: &mut Frame<'_>,
+    area: Rect,
+    app: &mut App,
+    palette: Palette,
+    is_mobile: bool,
+) {
     let rows = app
         .socials
         .iter()
@@ -166,8 +189,9 @@ fn render_socials(frame: &mut Frame<'_>, area: Rect, app: &mut App, palette: Pal
         })
         .collect();
 
-    let [list_area, preview_area] = split_browser_area(area);
-    SelectableList::new(" socials ", Panel::Socials, rows).render(frame, list_area, app, palette);
+    let [list_area, preview_area] = split_browser_area(area, is_mobile);
+    SelectableList::new(" socials ", Panel::Socials, rows)
+        .render(frame, list_area, app, palette, is_mobile);
     render_social_preview(frame, preview_area, app.selected_social(), palette);
 }
 
@@ -272,8 +296,10 @@ fn push_optional_url<'a>(
     }
 }
 
-fn split_browser_area(area: Rect) -> [Rect; 2] {
-    if area.width >= 82 && area.height >= 12 {
+fn split_browser_area(area: Rect, is_mobile: bool) -> [Rect; 2] {
+    if is_mobile {
+        Layout::vertical([Constraint::Percentage(48), Constraint::Percentage(52)]).areas(area)
+    } else if area.width >= 82 && area.height >= 12 {
         Layout::horizontal([Constraint::Percentage(38), Constraint::Percentage(62)]).areas(area)
     } else {
         Layout::vertical([Constraint::Percentage(45), Constraint::Percentage(55)]).areas(area)

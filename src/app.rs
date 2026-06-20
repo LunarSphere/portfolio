@@ -44,9 +44,14 @@ pub struct OutputEntry {
 
 #[derive(Debug, Clone)]
 pub struct HitZone {
-    pub panel: Panel,
-    pub index: usize,
+    pub action: HitZoneAction,
     pub area: Rect,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum HitZoneAction {
+    Select { panel: Panel, index: usize },
+    Command(&'static str),
 }
 
 #[derive(Debug)]
@@ -108,31 +113,59 @@ impl App {
     }
     // move zone to where mouse hits or do nothing if same zone
     pub fn handle_mouse_event(&mut self, mouse: MouseEvent) {
-        let Some(zone) = self.hit_zone_at(mouse.col, mouse.row).cloned() else {
+        let Some(action) = self
+            .hit_zone_at(mouse.col, mouse.row)
+            .map(|zone| zone.action)
+        else {
             return;
         };
 
-        if zone.panel != self.active_panel {
-            return;
-        }
-
-        match mouse.kind {
-            MouseEventKind::Moved | MouseEventKind::Entered => self.select(zone.panel, zone.index),
-            MouseEventKind::SingleClick(MouseButton::Left)
-            | MouseEventKind::DoubleClick(MouseButton::Left) => {
-                self.select(zone.panel, zone.index);
+        match (mouse.kind, action) {
+            (
+                MouseEventKind::Moved | MouseEventKind::Entered,
+                HitZoneAction::Select { panel, index },
+            ) if panel == self.active_panel => self.select(panel, index),
+            (
+                MouseEventKind::SingleClick(MouseButton::Left)
+                | MouseEventKind::DoubleClick(MouseButton::Left),
+                HitZoneAction::Select { panel, index },
+            ) if panel == self.active_panel => {
+                self.select(panel, index);
                 self.open_selected();
+            }
+            (
+                MouseEventKind::SingleClick(MouseButton::Left)
+                | MouseEventKind::DoubleClick(MouseButton::Left),
+                HitZoneAction::Command(command),
+            ) => {
+                self.command_input.clear();
+                self.run_command(command.to_string());
             }
             _ => {}
         }
     }
+
+    pub fn is_mobile_layout(&self, area: Rect) -> bool {
+        area.width <= 74 || area.height <= 32
+    }
+
     // clear what zone we are in
     pub fn clear_hit_zones(&mut self) {
         self.hit_zones.clear();
     }
 
     pub fn add_hit_zone(&mut self, panel: Panel, index: usize, area: Rect) {
-        self.hit_zones.push(HitZone { panel, index, area });
+        self.hit_zones.push(HitZone {
+            action: HitZoneAction::Select { panel, index },
+            area,
+        });
+    }
+
+    pub fn add_command_hit_zone(&mut self, command: &'static str, area: Rect) {
+        self.hit_zones.push(HitZone {
+            action: HitZoneAction::Command(command),
+            area,
+        });
     }
 
     pub fn ensure_project_visible(&mut self, visible_rows: usize) {
@@ -206,7 +239,7 @@ impl App {
                         "Use Up/Down or hover; Enter opens the selected URL.".to_string(),
                     ],
                 );
-                self.last_status = "projects | Up/Down | Enter".to_string();
+                self.last_status = "projects | tap or Enter".to_string();
             }
             Command::Resume => {
                 self.active_panel = Panel::Resume;
@@ -236,7 +269,7 @@ impl App {
                         "Use Up/Down or hover; Enter opens the selected link.".to_string(),
                     ],
                 );
-                self.last_status = "socials | Up/Down | Enter".to_string();
+                self.last_status = "socials | tap or Enter".to_string();
             }
             Command::Toggle => {
                 self.theme = self.theme.toggle();
@@ -379,5 +412,14 @@ mod tests {
         assert_eq!(ensure_visible(0, 0, 4), 0);
         assert_eq!(ensure_visible(6, 0, 4), 3);
         assert_eq!(ensure_visible(2, 5, 4), 2);
+    }
+
+    #[test]
+    fn mobile_layout_uses_terminal_dimensions() {
+        let app = App::new();
+
+        assert!(app.is_mobile_layout(Rect::new(0, 0, 74, 60)));
+        assert!(app.is_mobile_layout(Rect::new(0, 0, 120, 32)));
+        assert!(!app.is_mobile_layout(Rect::new(0, 0, 96, 40)));
     }
 }
