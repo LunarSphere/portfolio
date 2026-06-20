@@ -1,0 +1,7 @@
+# Learn how to configure this here:
+# https://trunkrs.dev/configuration/
+
+[build]
+target = "index.html"
+dist = "dist"
+public_url = "/"

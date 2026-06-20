@@ -1,0 +1,20 @@
+[
+  {
+    "label": "GitHub",
+    "handle": "@kevius",
+    "url": "https://github.com/kevius",
+    "blurb": "Code, experiments, and project history."
+  },
+  {
+    "label": "LinkedIn",
+    "handle": "James Kevius Tribble",
+    "url": "https://www.linkedin.com/in/james-kevius-tribble/",
+    "blurb": "Professional background and contact path. Verify this URL before publishing if the profile slug differs."
+  },
+  {
+    "label": "Email",
+    "handle": "replace-before-publishing",
+    "url": "mailto:hello@example.com",
+    "blurb": "Replace this placeholder with the preferred portfolio contact address."
+  }
+]

@@ -1,0 +1,32 @@
+[
+  {
+    "title": "Ratzilla Portfolio",
+    "slug": "ratzilla-portfolio",
+    "blurb": "This portfolio: a Rust/WASM browser TUI built with Ratzilla, Ratatui, and Trunk.",
+    "description": "A keyboard-first personal site with slash commands, selectable project/social panes, theme toggling, and static deployment support. Replace or expand this entry as the repository grows.",
+    "technologies": ["Rust", "WebAssembly", "Ratzilla", "Ratatui", "Trunk"],
+    "github_url": null,
+    "live_url": null,
+    "featured": true
+  },
+  {
+    "title": "Systems Project Placeholder",
+    "slug": "systems-placeholder",
+    "blurb": "A slot for a low-level, performance, infrastructure, or tooling project.",
+    "description": "Update data/projects.json with the exact repository, demo, technical constraints, and outcome before publishing broadly.",
+    "technologies": ["Rust", "CLI", "Tooling"],
+    "github_url": null,
+    "live_url": null,
+    "featured": false
+  },
+  {
+    "title": "Web/WASM Experiment Placeholder",
+    "slug": "wasm-placeholder",
+    "blurb": "A slot for a browser, graphics, or WebAssembly project.",
+    "description": "Use this entry for a project where recruiters can quickly see scope, implementation detail, and a live result.",
+    "technologies": ["WebAssembly", "Frontend", "UX"],
+    "github_url": null,
+    "live_url": null,
+    "featured": false
+  }
+]

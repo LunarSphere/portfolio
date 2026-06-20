@@ -1,0 +1,306 @@
+use ratzilla::ratatui::{
+    prelude::*,
+    widgets::{Block, BorderType, Paragraph, Wrap},
+};
+
+use crate::{
+    app::{App, Panel},
+    browser,
+    command::COMMANDS,
+    data::{Project, SocialLink},
+    theme::Palette,
+};
+
+use super::list::{SelectableItem, SelectableList};
+
+pub fn render_active_panel(frame: &mut Frame<'_>, area: Rect, app: &mut App, palette: Palette) {
+    match app.active_panel {
+        Panel::Welcome => render_welcome(frame, area, app, palette),
+        Panel::Help => render_help(frame, area, palette),
+        Panel::About => render_about(frame, area, palette),
+        Panel::Projects => render_projects(frame, area, app, palette),
+        Panel::Socials => render_socials(frame, area, app, palette),
+        Panel::Resume => render_resume(frame, area, palette),
+    }
+}
+
+fn render_welcome(frame: &mut Frame<'_>, area: Rect, app: &App, palette: Palette) {
+    let project_count = app.projects.len();
+    let social_count = app.socials.len();
+    let lines = vec![
+        Line::from(Span::styled(
+            "James Kevius Tribble",
+            Style::default()
+                .fg(palette.accent)
+                .add_modifier(Modifier::BOLD),
+        )),
+        Line::from("Rust/WASM portfolio rendered as a browser TUI."),
+        Line::from(""),
+        Line::from(vec![
+            Span::styled("Fast path: ", Style::default().fg(palette.muted)),
+            Span::raw("/projects"),
+            Span::raw("  "),
+            Span::raw("/resume"),
+            Span::raw("  "),
+            Span::raw("/socials"),
+            Span::raw("  "),
+            Span::raw("/help"),
+        ]),
+        Line::from(vec![
+            Span::styled("Loaded: ", Style::default().fg(palette.muted)),
+            Span::raw(format!("{project_count} projects, {social_count} socials")),
+        ]),
+        Line::from(""),
+        Line::from("Type a command in the prompt and press Enter."),
+    ];
+
+    render_text_panel(frame, area, " welcome ", lines, palette);
+}
+
+fn render_help(frame: &mut Frame<'_>, area: Rect, palette: Palette) {
+    let mut lines = vec![
+        Line::from(Span::styled(
+            "Commands",
+            Style::default()
+                .fg(palette.accent)
+                .add_modifier(Modifier::BOLD),
+        )),
+        Line::from(""),
+    ];
+
+    for command in COMMANDS {
+        lines.push(Line::from(vec![
+            Span::styled(
+                format!("{:<10}", command.name),
+                Style::default()
+                    .fg(palette.foreground)
+                    .add_modifier(Modifier::BOLD),
+            ),
+            Span::styled(command.description, Style::default().fg(palette.muted)),
+        ]));
+    }
+
+    lines.push(Line::from(""));
+    lines.push(Line::from(vec![
+        Span::styled("Lists: ", Style::default().fg(palette.muted)),
+        Span::raw("Up/Down or hover selects; Enter opens the selected primary URL."),
+    ]));
+    lines.push(Line::from(vec![
+        Span::styled("Escape: ", Style::default().fg(palette.muted)),
+        Span::raw("clear input or return to welcome."),
+    ]));
+
+    render_text_panel(frame, area, " help ", lines, palette);
+}
+
+fn render_about(frame: &mut Frame<'_>, area: Rect, palette: Palette) {
+    let lines = vec![
+        Line::from(Span::styled(
+            "About",
+            Style::default()
+                .fg(palette.accent)
+                .add_modifier(Modifier::BOLD),
+        )),
+        Line::from(""),
+        Line::from("James Kevius Tribble builds software with a practical, systems-minded approach."),
+        Line::from("This site is intentionally compact: keyboard-first navigation, direct links, and editable JSON content."),
+        Line::from(""),
+        Line::from(vec![
+            Span::styled("Next: ", Style::default().fg(palette.muted)),
+            Span::raw("/projects for work samples, /resume for the PDF, /socials for links."),
+        ]),
+    ];
+
+    render_text_panel(frame, area, " about ", lines, palette);
+}
+
+fn render_resume(frame: &mut Frame<'_>, area: Rect, palette: Palette) {
+    let lines = vec![
+        Line::from(Span::styled(
+            "Resume",
+            Style::default()
+                .fg(palette.accent)
+                .add_modifier(Modifier::BOLD),
+        )),
+        Line::from(""),
+        Line::from("The browser has been asked to open the resume in a new tab."),
+        Line::from("Browsers control whether that opens inline, downloads, or prompts."),
+        Line::from(""),
+        Line::from(vec![
+            Span::styled("Direct path: ", Style::default().fg(palette.muted)),
+            Span::styled(
+                browser::RESUME_PATH,
+                Style::default().fg(palette.foreground),
+            ),
+        ]),
+        Line::from("Replace public/resume.pdf with the current resume before publishing."),
+    ];
+
+    render_text_panel(frame, area, " resume ", lines, palette);
+}
+
+fn render_projects(frame: &mut Frame<'_>, area: Rect, app: &mut App, palette: Palette) {
+    let rows = app
+        .projects
+        .iter()
+        .map(|project| SelectableItem {
+            title: project.title.clone(),
+            meta: project.technologies.join(", "),
+            marker: project.featured.then_some("*"),
+        })
+        .collect();
+
+    let [list_area, preview_area] = split_browser_area(area);
+    SelectableList::new(" projects ", Panel::Projects, rows).render(frame, list_area, app, palette);
+    render_project_preview(frame, preview_area, app.selected_project(), palette);
+}
+
+fn render_socials(frame: &mut Frame<'_>, area: Rect, app: &mut App, palette: Palette) {
+    let rows = app
+        .socials
+        .iter()
+        .map(|social| SelectableItem {
+            title: social.label.clone(),
+            meta: social.handle.clone().unwrap_or_default(),
+            marker: None,
+        })
+        .collect();
+
+    let [list_area, preview_area] = split_browser_area(area);
+    SelectableList::new(" socials ", Panel::Socials, rows).render(frame, list_area, app, palette);
+    render_social_preview(frame, preview_area, app.selected_social(), palette);
+}
+
+fn render_project_preview(
+    frame: &mut Frame<'_>,
+    area: Rect,
+    project: Option<&Project>,
+    palette: Palette,
+) {
+    let Some(project) = project else {
+        render_text_panel(
+            frame,
+            area,
+            " preview ",
+            vec![Line::from("No project selected.")],
+            palette,
+        );
+        return;
+    };
+
+    let mut lines = vec![
+        Line::from(Span::styled(
+            project.title.as_str(),
+            Style::default()
+                .fg(palette.accent)
+                .add_modifier(Modifier::BOLD),
+        )),
+        Line::from(Span::styled(
+            project.blurb.as_str(),
+            Style::default().fg(palette.foreground),
+        )),
+        Line::from(""),
+        Line::from(project.description.as_str()),
+        Line::from(""),
+        Line::from(vec![
+            Span::styled("Tech: ", Style::default().fg(palette.muted)),
+            Span::raw(project.technologies.join(", ")),
+        ]),
+    ];
+
+    push_optional_url(&mut lines, "Live", project.live_url.as_deref(), palette);
+    push_optional_url(&mut lines, "GitHub", project.github_url.as_deref(), palette);
+
+    if project.primary_url().is_none() {
+        lines.push(Line::from(Span::styled(
+            "No URL configured yet.",
+            Style::default().fg(palette.warning),
+        )));
+    }
+
+    render_text_panel(frame, area, " preview ", lines, palette);
+}
+
+fn render_social_preview(
+    frame: &mut Frame<'_>,
+    area: Rect,
+    social: Option<&SocialLink>,
+    palette: Palette,
+) {
+    let Some(social) = social else {
+        render_text_panel(
+            frame,
+            area,
+            " preview ",
+            vec![Line::from("No social selected.")],
+            palette,
+        );
+        return;
+    };
+
+    let mut lines = vec![
+        Line::from(Span::styled(
+            social.label.as_str(),
+            Style::default()
+                .fg(palette.accent)
+                .add_modifier(Modifier::BOLD),
+        )),
+        Line::from(Span::styled(
+            social.handle.as_deref().unwrap_or(""),
+            Style::default().fg(palette.muted),
+        )),
+        Line::from(""),
+        Line::from(social.blurb.as_str()),
+        Line::from(""),
+    ];
+    push_optional_url(&mut lines, "URL", social.primary_url(), palette);
+
+    render_text_panel(frame, area, " preview ", lines, palette);
+}
+
+fn push_optional_url<'a>(
+    lines: &mut Vec<Line<'a>>,
+    label: &'static str,
+    url: Option<&'a str>,
+    palette: Palette,
+) {
+    if let Some(url) = url.filter(|url| !url.trim().is_empty()) {
+        lines.push(Line::from(vec![
+            Span::styled(format!("{label}: "), Style::default().fg(palette.muted)),
+            Span::styled(url.to_string(), Style::default().fg(palette.success)),
+        ]));
+    }
+}
+
+fn split_browser_area(area: Rect) -> [Rect; 2] {
+    if area.width >= 82 && area.height >= 12 {
+        Layout::horizontal([Constraint::Percentage(38), Constraint::Percentage(62)]).areas(area)
+    } else {
+        Layout::vertical([Constraint::Percentage(45), Constraint::Percentage(55)]).areas(area)
+    }
+}
+
+fn render_text_panel<'a>(
+    frame: &mut Frame<'_>,
+    area: Rect,
+    title: &'static str,
+    lines: Vec<Line<'a>>,
+    palette: Palette,
+) {
+    let block = Block::bordered()
+        .border_type(BorderType::Plain)
+        .border_style(Style::default().fg(palette.border))
+        .title(title);
+
+    frame.render_widget(
+        Paragraph::new(Text::from(lines))
+            .block(block)
+            .style(
+                Style::default()
+                    .bg(palette.background)
+                    .fg(palette.foreground),
+            )
+            .wrap(Wrap { trim: false }),
+        area,
+    );
+}
