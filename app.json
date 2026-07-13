@@ -1,0 +1,19 @@
+{
+  "expo": {
+    "name": "Kevius Tribble Portfolio",
+    "slug": "kevius-portfolio",
+    "version": "1.0.0",
+    "scheme": "keviusportfolio",
+    "orientation": "default",
+    "userInterfaceStyle": "dark",
+    "icon": "./public/mascot.png",
+    "web": {
+      "output": "static",
+      "favicon": "./public/mascot.png"
+    },
+    "plugins": ["expo-router"],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

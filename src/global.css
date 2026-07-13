@@ -1,0 +1,30 @@
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  margin: 0;
+}
+
+html {
+  background: #0b0f11;
+}
+
+body {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+#root {
+  display: flex;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+::selection {
+  background: #193740;
+  color: #ebfdff;
+}
