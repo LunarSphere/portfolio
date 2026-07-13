@@ -34,6 +34,8 @@ export const site = {
     description: "Open the current resume as a PDF in a new tab.",
     editorHint: "Replace public/resume.pdf whenever the resume changes.",
   },
+  // Keep featured work at the top while preserving the authored order within
+  // the featured and non-featured groups.
   projects: [
     {
       title: "Terminal Portfolio",
@@ -45,7 +47,7 @@ export const site = {
       technologies: ["React Native", "Expo", "TypeScript", "React Native Web"],
       githubUrl: "https://github.com/LunarSphere/portfolio",
       liveUrl: "https://keviustribble.dev/",
-      featured: true,
+      featured: false,
     },
     {
       title: "Arxivist",
@@ -59,24 +61,43 @@ export const site = {
       featured: true,
     },
     {
+      title: "Policy Document Validator",
+      slug: "policy-document-validator",
+      blurb: "Won Most Viable at LPL Financials 2026 university hackathon",
+      description: "A document processing and validation system that extracts data from documents using AWS Textract and validates them against company and state policies using AWS Bedrock Knowledge Bases",
+      technologies: ["OCR", "ReactJS", "AWS"],
+      githubUrl: "https://github.com/LunarSphere/team-7",
+      featured: true,
+    },
+    {
+      title: "2025 Computer Science Capstone",
+      slug: "2025-computer-science-capstone",
+      blurb: "The core component I developed for my teams capstone project",
+      description: "Implemented the Nightshade research methodology to protect publicly shared images on our social media platform from unauthorized scraping and use. Deployed the solution on an AWS EC@ server and ran a weekly recurring job to continuously poison newly uploaded content.",
+      technologies: ["Computer Vision", "Data Poisoning", "Diffusion"],
+      githubUrl: "https://github.com/LunarSphere/nightshade-release",
+      featured: false,
+    },
+    {
       title: "Honors Thesis",
       slug: "honors-thesis",
       blurb: "Experiments I'm running to graduate with honors distinction.",
       description: "I'm investigating what causes MLLMs to hallucinate.",
-      technologies: ["Machine Learning", "Multimodal LLMs", "Research"],
+      technologies: ["Computer Vision", "Multimodal LLMs", "Research"],
+      githubUrl: "https://github.com/LunarSphere/LLM_Hallucinations",
       featured: false,
     },
-  ],
+  ].sort((a, b) => Number(b.featured) - Number(a.featured)),
   socials: [
     {
       label: "GitHub",
-      handle: "@kevius",
+      handle: "@LunarSphere",
       url: "https://github.com/LunarSphere",
       blurb: "Code, experiments, and project history.",
     },
     {
       label: "LinkedIn",
-      handle: "James Kevius Tribble",
+      handle: "Kevius Tribble",
       url: "https://www.linkedin.com/in/jamestribble/",
       blurb: "Professional background and contact path.",
     },
@@ -85,7 +106,7 @@ export const site = {
       handle: "Kevius Thinks",
       url: "https://substack.com/@keviusthinks",
       blurb:
-        "A tortured poet, I write about whatever my current hyperfixation is.",
+        "A tortured poet",
     },
     {
       label: "Email",

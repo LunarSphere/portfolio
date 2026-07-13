@@ -10,6 +10,14 @@ test("site content has publishable identity and entries", () => {
   assert.ok(site.socials.every((social) => /^(https?:|mailto:)/u.test(social.url)));
 });
 
+test("featured projects are listed first", () => {
+  const firstNonFeatured = site.projects.findIndex((project) => !project.featured);
+
+  assert.ok(firstNonFeatured >= 0);
+  assert.ok(site.projects.slice(0, firstNonFeatured).every((project) => project.featured));
+  assert.ok(site.projects.slice(firstNonFeatured).every((project) => !project.featured));
+});
+
 test("project live URL takes precedence over GitHub", () => {
   const project = {
     title: "Test",
