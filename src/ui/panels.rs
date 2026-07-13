@@ -22,7 +22,7 @@ pub fn render_active_panel(
 ) {
     match app.active_panel {
         Panel::Welcome => render_welcome(frame, area, app, palette, is_mobile),
-        Panel::Help => render_help(frame, area, palette),
+        Panel::Help => render_help(frame, area, palette, is_mobile),
         Panel::About => render_about(frame, area, palette),
         Panel::Projects => render_projects(frame, area, app, palette, is_mobile),
         Panel::Socials => render_socials(frame, area, app, palette, is_mobile),
@@ -42,7 +42,9 @@ fn render_welcome(frame: &mut Frame<'_>, area: Rect, app: &App, palette: Palette
         )),
         Line::from("Rust/WASM portfolio rendered as a browser TUI."),
         Line::from(""),
-        Line::from(vec![
+    ];
+    if !is_mobile {
+        lines.push(Line::from(vec![
             Span::styled("Fast path: ", Style::default().fg(palette.muted)),
             Span::raw("/projects"),
             Span::raw("  "),
@@ -51,23 +53,25 @@ fn render_welcome(frame: &mut Frame<'_>, area: Rect, app: &App, palette: Palette
             Span::raw("/socials"),
             Span::raw("  "),
             Span::raw("/help"),
-        ]),
+        ]));
+    }
+    lines.extend([
         Line::from(vec![
             Span::styled("Loaded: ", Style::default().fg(palette.muted)),
             Span::raw(format!("{project_count} projects, {social_count} socials")),
         ]),
         Line::from(""),
-        Line::from("Type a command in the prompt and press Enter."),
-    ];
-    if is_mobile {
-        lines.pop();
-        lines.push(Line::from("Tap a shortcut below or type a command."));
-    }
+        Line::from(if is_mobile {
+            "Tap a shortcut below or type a command."
+        } else {
+            "Type a command in the prompt and press Enter."
+        }),
+    ]);
 
     render_text_panel(frame, area, " welcome ", lines, palette);
 }
 
-fn render_help(frame: &mut Frame<'_>, area: Rect, palette: Palette) {
+fn render_help(frame: &mut Frame<'_>, area: Rect, palette: Palette, is_mobile: bool) {
     let mut lines = vec![
         Line::from(Span::styled(
             "Commands",
@@ -93,7 +97,11 @@ fn render_help(frame: &mut Frame<'_>, area: Rect, palette: Palette) {
     lines.push(Line::from(""));
     lines.push(Line::from(vec![
         Span::styled("Lists: ", Style::default().fg(palette.muted)),
-        Span::raw("Up/Down or hover selects; Enter opens the selected primary URL."),
+        Span::raw(if is_mobile {
+            "tap an item to open its primary link."
+        } else {
+            "Up/Down or hover selects; Enter opens the selected primary URL."
+        }),
     ]));
     lines.push(Line::from(vec![
         Span::styled("Escape: ", Style::default().fg(palette.muted)),
@@ -167,6 +175,12 @@ fn render_projects(
         })
         .collect();
 
+    if is_mobile {
+        SelectableList::new(" projects ", Panel::Projects, rows)
+            .render(frame, area, app, palette, true);
+        return;
+    }
+
     let [list_area, preview_area] = split_browser_area(area, is_mobile);
     SelectableList::new(" projects ", Panel::Projects, rows)
         .render(frame, list_area, app, palette, is_mobile);
@@ -189,6 +203,12 @@ fn render_socials(
             marker: None,
         })
         .collect();
+
+    if is_mobile {
+        SelectableList::new(" socials ", Panel::Socials, rows)
+            .render(frame, area, app, palette, true);
+        return;
+    }
 
     let [list_area, preview_area] = split_browser_area(area, is_mobile);
     SelectableList::new(" socials ", Panel::Socials, rows)

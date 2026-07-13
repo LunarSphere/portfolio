@@ -100,36 +100,26 @@ fn render_desktop_shell(frame: &mut Frame<'_>, area: Rect, app: &mut App, palett
 }
 
 fn render_mobile_shell(frame: &mut Frame<'_>, area: Rect, app: &mut App, palette: Palette) {
-    let header_height = if area.height >= 18 { 2 } else { 1 };
-    let chips_height = if area.height < 18 {
-        3
-    } else if area.width >= 62 {
-        4
-    } else {
-        5
-    };
-    let history_height = if area.height >= 30 {
-        4
-    } else if area.height >= 24 {
-        3
-    } else {
-        0
-    };
-
-    let [header, body, chips, history, prompt] = Layout::vertical([
-        Constraint::Length(header_height),
-        Constraint::Min(4),
-        Constraint::Length(chips_height),
-        Constraint::Length(history_height),
-        Constraint::Length(3),
-    ])
-    .areas(area);
+    // Phone screens prioritize the active panel. The shortcuts and prompt stay
+    // available, but command history is desktop-only so it cannot crowd out
+    // the content someone came to read or tap.
+    let [header, body, chips, prompt] = mobile_shell_areas(area);
 
     render_mobile_header(frame, header, app, palette);
     panels::render_active_panel(frame, body, app, palette, true);
     render_command_chips(frame, chips, app, palette);
-    render_history(frame, history, app, palette);
     render_prompt(frame, prompt, app, palette, true);
+}
+
+fn mobile_shell_areas(area: Rect) -> [Rect; 4] {
+    let chips_height = if area.width >= 34 { 4 } else { 5 };
+    Layout::vertical([
+        Constraint::Length(1),
+        Constraint::Min(4),
+        Constraint::Length(chips_height),
+        Constraint::Length(3),
+    ])
+    .areas(area)
 }
 
 fn render_header(frame: &mut Frame<'_>, area: Rect, app: &App, palette: Palette) {
@@ -189,32 +179,16 @@ fn render_mobile_header(frame: &mut Frame<'_>, area: Rect, app: &App, palette: P
         return;
     }
 
-    let lines = if area.height > 1 {
-        vec![
-            Line::from(Span::styled(
-                "Kevius Tribble",
-                Style::default()
-                    .fg(palette.accent)
-                    .add_modifier(Modifier::BOLD),
-            )),
-            Line::from(vec![
-                Span::styled(
-                    app.active_panel.title(),
-                    Style::default().fg(palette.foreground),
-                ),
-                Span::raw(" | "),
-                Span::raw(app.theme.name()),
-            ]),
-        ]
-    } else {
-        vec![Line::from(vec![
-            Span::styled("Kevius Tribble", Style::default().fg(palette.accent)),
-            Span::raw(" | "),
-            Span::raw(app.active_panel.title()),
-            Span::raw(" | "),
-            Span::raw(app.theme.name()),
-        ])]
-    };
+    let lines = vec![Line::from(vec![
+        Span::styled(
+            "Kevius Tribble",
+            Style::default()
+                .fg(palette.accent)
+                .add_modifier(Modifier::BOLD),
+        ),
+        Span::raw(" | "),
+        Span::raw(app.active_panel.title()),
+    ])];
 
     frame.render_widget(
         Paragraph::new(Text::from(lines))
@@ -376,4 +350,27 @@ fn render_prompt(frame: &mut Frame<'_>, area: Rect, app: &App, palette: Palette,
             .wrap(Wrap { trim: false }),
         area,
     );
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn mobile_shell_reserves_rows_for_content_not_history() {
+        let [header, body, chips, prompt] = mobile_shell_areas(Rect::new(0, 0, 40, 40));
+
+        assert_eq!(header.height, 1);
+        assert_eq!(chips.height, 4);
+        assert_eq!(prompt.height, 3);
+        assert_eq!(body.height, 32);
+    }
+
+    #[test]
+    fn narrow_mobile_shell_allows_an_extra_shortcut_row() {
+        let [_header, body, chips, _prompt] = mobile_shell_areas(Rect::new(0, 0, 33, 40));
+
+        assert_eq!(chips.height, 5);
+        assert_eq!(body.height, 31);
+    }
 }
