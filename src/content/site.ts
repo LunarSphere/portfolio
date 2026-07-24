@@ -81,11 +81,11 @@ export const site = {
     {
       title: "Honors Thesis",
       slug: "honors-thesis",
-      blurb: "Experiments I'm running to graduate with honors distinction.",
-      description: "I'm investigating what causes MLLMs to hallucinate.",
-      technologies: ["Computer Vision", "Multimodal LLMs", "Research"],
-      githubUrl: "https://github.com/LunarSphere/LLM_Hallucinations",
-      featured: false,
+      blurb: "I like robots. repo coming soon",
+      description: "gripperless aerial assembly w/ drones",
+      technologies: ["Robot Operating System", "Onshape", "Python"],
+      githubUrl: "https://github.com/LunarSphere",
+      featured: true,
     },
   ].sort((a, b) => Number(b.featured) - Number(a.featured)),
   socials: [
